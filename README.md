@@ -1,231 +1,240 @@
-# PW Product Configurator — Setup Guide
+<div align="center">
 
-A plain-language walkthrough for setting this up with no coding. Everything
-described here is done by clicking around in wp-admin.
+# PW Product Configurator
+
+**Turn any WooCommerce product into a fully configurable, live-priced product.**
+
+Dimensions · Materials · Printing · Add-ons — all managed from wp-admin, priced in real time, and added to cart at the exact calculated price.
+
+[![WordPress](https://img.shields.io/badge/WordPress-6.4%2B-blue?logo=wordpress&logoColor=white)](#requirements)
+[![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4?logo=php&logoColor=white)](#requirements)
+[![WooCommerce](https://img.shields.io/badge/WooCommerce-required-7f54b3?logo=woocommerce&logoColor=white)](#requirements)
+[![License](https://img.shields.io/badge/license-GPL--2.0--or--later-success)](#license)
+[![Version](https://img.shields.io/badge/version-0.0.01-orange)](#changelog)
+[![HPOS](https://img.shields.io/badge/WooCommerce-HPOS%20compatible-7f54b3)](#woocommerce-compatibility)
+
+</div>
 
 ---
 
-## 1. What this plugin actually does
+## Table of contents
 
-On any WooCommerce product page, it shows a form with dropdowns and
-checkboxes (Quantity, Format, Material, Printing, etc.). As a customer
-picks options, the price on the right updates live, and "Add to cart"
-adds the product at exactly that calculated price — not the normal
-WooCommerce price.
+- [Overview](#overview)
+- [Key features](#key-features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [How it works](#how-it-works)
+- [Displaying the configurator](#displaying-the-configurator)
+- [The pricing model](#the-pricing-model)
+- [Customizing the layout with CSS](#customizing-the-layout-with-css)
+- [Developer reference](#developer-reference)
+- [Worked example](#worked-example)
+- [WooCommerce compatibility](#woocommerce-compatibility)
+- [FAQ](#faq)
+- [Troubleshooting](#troubleshooting)
+- [Roadmap](#roadmap)
+- [Changelog](#changelog)
+- [License](#license)
 
-You control everything from three admin screens under the **PW
-Configurator** menu in the left-hand wp-admin sidebar:
+---
 
-| Screen | What it's for |
+## Overview
+
+PW Product Configurator adds a live-pricing configuration form to any WooCommerce product page. Customers pick options from dropdowns and checkboxes — **Quantity, Format, Material, Printing, Varnish,** and so on — and the price updates instantly on the right. **Add to cart** then places the product in the cart at that exact calculated price, not WooCommerce's regular price.
+
+It is purpose-built for made-to-measure products such as printed packaging (folding boxes, labels), where the price depends on **box dimensions × material × quantity tier**, plus one-off surcharges and finishing options.
+
+Everything is controlled from three admin screens under the **PW Configurator** menu in wp-admin — no code required for day-to-day operation.
+
+| Screen | Purpose |
 |---|---|
-| **Field Groups** | The dropdowns/checkboxes themselves (Material, Printing, etc.) and their prices |
-| **Dimension Presets** | The list of box sizes in the "Format" dropdown |
-| **Settings** | Quantity tiers, VAT rate, and a master on/off switch for pricing |
+| **Field Groups** | The dropdowns/checkboxes (Material, Printing, etc.) and their prices |
+| **Dimension Presets** | The box sizes shown in the **Format** dropdown |
+| **Settings** | Quantity tiers, VAT rate, global multipliers, master on/off switch |
 
 ---
 
-## 2. Install it
+## Key features
 
-1. Download the zip.
-2. In wp-admin go to **Plugins → Add New → Upload Plugin**, choose the
-   zip, click **Install Now**, then **Activate**.
-3. You'll see a new **PW Configurator** icon in the left sidebar. If you
-   don't, make sure WooCommerce is active first — this plugin requires it.
-
----
-
-## 3. The two ways to assign things (category vs. individual product)
-
-Both **Field Groups** and **Dimension Presets** have an **"Assign to
-Categories / Products"** box on the right when you edit one. You get two
-independent ways to control where it shows up, and you can use either or
-both together:
-
-- **By category** — tick one or more product categories (e.g. "Folding
-  Boxes"). It will then apply to *every* product in that category
-  automatically. New products you add to that category later are
-  automatically included too — nothing more to do.
-- **By individual product** — type into the search box and pick specific
-  products by name, regardless of category. Good for a one-off product
-  that needs its own options, or for adding something to a handful of
-  products that don't share a category.
-- **Leave both empty** — it applies to your *entire shop*, every product.
-- **If you fill in both** — a product only needs to match ONE of the two
-  (category OR individual pick) to get it. You don't need to do both for
-  the same product.
-
-**Extra fine control on the product itself:** open any WooCommerce
-product for editing and scroll to the **"PW Configurator — Overrides for
-this Product"** box near the bottom. From here you can:
-- **Add** a field group to just this one product, even if its category
-  doesn't match.
-- **Exclude** a field group that would normally apply here (e.g. it's
-  assigned to the whole "Folding Boxes" category, but this one specific
-  product shouldn't have it).
+- **Live price calculation** — the offer panel recomputes on every selection, before add to cart.
+- **Size-based pricing** — options priced **per m² × box surface area × quantity**, just like a real print shop.
+- **Quantity-tier discounts** — digressive per-unit pricing (e.g. 500 units cost more per box than 100,000).
+- **Flexible field types** — dropdowns and checkboxes, each with its own pricing rule.
+- **Per-category *and* per-product targeting** — assign options by product category, by individual product, or globally.
+- **Per-product overrides** — add or exclude specific field groups on a single product.
+- **Master kill switch** — disable all pricing site-wide in one click (staging/preview mode).
+- **Elementor widget + shortcode** — drop the configurator anywhere.
+- **WooCommerce-native** — uses `wc_price()` formatting and `WC_Order_Item` meta, fully HPOS-compatible.
+- **Secure by default** — nonce-verified, capability-checked, escaped output throughout.
 
 ---
 
-## 4. Setting up Dimension Presets (the "Format" dropdown)
+## Requirements
 
-Go to **PW Configurator → Dimension Presets → Add New**.
+| Requirement | Version |
+|---|---|
+| WordPress | 6.4 or higher |
+| PHP | 8.1 or higher |
+| **WooCommerce** | **Required** (latest) |
+| Elementor / Elementor Pro | Optional, tested up to 4.0 (recommended for the widget) |
 
-1. **Title** — this is exactly what the customer sees in the dropdown.
-   Type it the way you want it displayed, e.g. `40 x 40 x 100 mm`.
-2. **Dimension (internal size, mm)** box — enter the real Length, Width,
-   and Height in millimetres. These numbers are invisible to the customer
-   but are what the price calculation is based on (bigger box = more
-   material = higher price), so they need to be accurate.
-3. **Assign to Categories / Products** box — tick the category (or
-   search for individual products) this size should be offered for.
-4. Click **Publish**.
-
-Repeat for every size you sell. A product will show every Dimension
-Preset that matches its category or is individually assigned to it —
-so if "Folding Boxes" has 8 sizes assigned, every folding box product
-shows all 8 in its Format dropdown automatically.
+> The plugin activates only when WooCommerce is present. If WooCommerce is missing, you'll see an admin notice and nothing else loads.
 
 ---
 
-## 5. Setting up a Field Group (the actual dropdowns/checkboxes)
+## Installation
 
-Go to **PW Configurator → Field Groups → Add New**. Each Field Group is a
-bundle of related fields — you might make one per category (e.g.
-"Folding Box Options"), or split into smaller reusable bundles (e.g. a
-"Finishing Options" group with Varnish/Laminate/Braille that you reuse
-across several categories).
-
-### Step 1 — name it
-The **Title** is only for you in wp-admin, customers never see it.
-Something like `Folding Box Options` is fine.
-
-### Step 2 — Price Calculation box (top right)
-- **"Include this group's fields in price calculation"** — leave this
-  ticked normally. Untick it if you want these fields to appear on the
-  site (so customers can browse/select them) but **not affect price
-  yet** — handy while you're still working out real prices for a new
-  category. You can flip this back on later with one click, no need to
-  touch the individual field prices.
-- **Price multiplier** — leave at `1` normally. This scales every price
-  in this group up or down. Examples: `0.9` = a temporary 10% discount
-  on everything in this group; `1.15` = a 15% surcharge; `0` = same as
-  unticking the box above, prices from this group become zero.
-
-### Step 3 — Assign to Categories / Products box
-Same as described in section 3 above.
-
-### Step 4 — build the Fields
-Click **+ Add Field** for each dropdown or checkbox you need.
-
-For each field you fill in:
-- **Field label** — what the customer sees, e.g. `Material`
-- **Field key** — an internal short name, only lowercase letters/numbers/
-  underscores, must be unique within this group (e.g. `material`). It
-  auto-cleans as you type. Don't worry about getting this perfect —
-  it's never shown to customers.
-- **Dropdown or Checkbox** — pick the field type.
-
-**If it's a Dropdown:** click **+ Add option** for each choice
-(e.g. "275 g/m² GC1 chromoboard", "350 g/m² GZ solid bleached board").
-For every option you set:
-- **Option label** — what's shown in the dropdown
-- **Pricing** — pick one:
-  - *No price impact* — purely informational (e.g. "Country of
-    delivery" might just affect VAT, not price)
-  - *€ per m² (× box area × qty)* — the option's price is multiplied by
-    the box's surface area and by the quantity being ordered. Use this
-    for anything proportional to box size: material, printing, varnish,
-    laminate.
-  - *Flat, once per order* — a fixed amount added once regardless of box
-    size or quantity. Use this for things like an express-production
-    surcharge.
-- **Price value** — the actual number (in your shop's currency)
-
-**If it's a Checkbox** (like "Professional artwork check — €20"):
-you get a simpler single option — just an **Option label** and a **Flat
-price**. It's a one-time flat charge, added only when the box is ticked.
-This is exactly the setup you need for the "Other: Professional artwork
-check – 20 EUR" field.
-
-### Step 5 — Publish
-Click **Publish**. It's now live on every matching product.
+1. Download the plugin `.zip`.
+2. In wp-admin, go to **Plugins → Add New → Upload Plugin**, choose the zip, and click **Install Now**.
+3. Click **Activate**.
+4. A new **PW Configurator** item appears in the left-hand wp-admin sidebar. If it doesn't, confirm WooCommerce is active first.
 
 ---
 
-## 6. Setting up Settings (Quantity, VAT, and the master switch)
+## Quick start
 
-Go to **PW Configurator → Settings**.
+The fastest path to a working configurator:
 
-- **Price calculation is active site-wide** — this is the big kill
-  switch. Untick it and *every* product's calculated price becomes €0
-  everywhere, instantly, without touching a single Field Group. Use this
-  while you're first building out the site so customers browsing don't
-  see half-finished prices; tick it back on when you're ready to go live.
-  While it's off, the offer box shows a small "Pricing preview mode"
-  notice so nobody on your team mistakes it for a real price.
-- **Global price multiplier** — scales absolutely everything, site-wide,
-  on top of whatever each Field Group already calculates. Leave at `1`.
-  Only touch this for a temporary store-wide promotion or surcharge.
-- **Quantity Tiers table** — the exact numbers customers can choose in
-  the Quantity dropdown (500, 1000, 5000 … 100000 by default) and the
-  discount multiplier for each. A multiplier of `0.68` means boxes at
-  that quantity tier are priced as if they're 68% of the per-box price
-  at tier 1 — i.e., bulk orders get progressively cheaper per box, the
-  way real print-shop pricing works. Click **+ Add another tier row** if
-  you need more tiers, or just change the numbers in the existing rows.
-- **Default VAT rate** — enter as a decimal, so 20% is `0.20`, 19% is
-  `0.19`, and so on.
+1. **Settings** → confirm the **master pricing switch** is on, set your **quantity tiers** and **default VAT rate**.
+2. **Dimension Presets → Add New** → enter a label (`40 x 40 x 100 mm`) and the real L/W/H in mm → assign to a category → **Publish**. Repeat for each size.
+3. **Field Groups → Add New** → name it → add dropdowns/checkboxes with pricing → assign to a category → **Publish**.
+4. Drop the **PW Product Configurator** widget onto your single-product Elementor template (or use `[pwc_configurator]`).
 
-Click **Save Settings** at the bottom when done.
+Open any matching product page — the form, live pricing, and add-to-cart are live.
 
 ---
 
-## 7. Putting the configurator on the product page
+## How it works
 
-You're using Elementor Pro, so:
+The configurator is built from three building blocks. Understanding how they relate makes everything else obvious.
 
-1. Edit your **Single Product** template in **Elementor → Theme Builder**
-   (or edit a specific product page directly with Elementor if you're
-   not using a shared template yet).
-2. Drag in the **PW Product Configurator** widget (search for "PW" in
-   the widget panel).
-3. Leave the **Product ID** field blank — it automatically shows the
-   right form for whichever product page it's on.
-4. Style the surrounding section/columns however you like — the widget's
-   own layout (form on the left, sticky offer box on the right) will sit
-   inside it.
+### 1. Dimension Presets (the *Format* dropdown)
 
-If you'd rather use a shortcode instead of the widget, `[pwc_configurator]`
-does the same thing.
+Each preset is one entry in the customer-visible Format dropdown.
+
+- **Title** — exactly what the customer sees, e.g. `40 x 40 x 100 mm`.
+- **Length / Width / Height (mm)** — the *internal* dimensions. Invisible to customers, but they drive every per-m² price, so they must be accurate.
+- **Assignment** — which categories/products this size is offered for.
+
+A product shows *every* preset that matches its category or is individually assigned to it. Give "Folding Boxes" eight sizes and every folding-box product automatically offers all eight.
+
+### 2. Field Groups (the dropdowns & checkboxes)
+
+A Field Group is a reusable bundle of fields — typically one per product category (e.g. *Folding Box Options*), or a smaller cross-category bundle (e.g. *Finishing Options* with Varnish/Laminate).
+
+- **Title** — internal only; customers never see it.
+- **Include in price calculation** — leave on. Turn off to show the fields (so customers can browse them) without affecting price yet — useful while finalizing prices for a new category. Flip it back on later; no need to touch individual field prices.
+- **Price multiplier** — scales every price in the group. `0.9` = 10% discount on the group, `1.15` = 15% surcharge, `0` = same as disabling the group.
+- **Fields** — built with **+ Add Field**:
+
+  | Setting | Notes |
+  |---|---|
+  | **Field label** | What the customer sees, e.g. `Material` |
+  | **Field key** | Internal slug, lowercase/`_` only, unique within the group (e.g. `material`). Auto-cleaned as you type. Never shown to customers. |
+  | **Type** | **Dropdown** or **Checkbox** |
+
+  **Dropdown options** (added with **+ Add option**) each carry one pricing rule (see [The pricing model](#the-pricing-model)). **Checkbox** options are a single one-off flat charge, added only when ticked (ideal for *“Professional artwork check — €20”*).
+
+### 3. Settings
+
+- **Master pricing switch** — the big kill switch. Off = *every* price returns €0 across the whole site, instantly, without editing any Field Group. While off, the offer panel shows a *Pricing preview Mode* notice so your team never mistakes it for a real price. Use it during build-out; switch on for go-live.
+- **Global price multiplier** — scales everything, site-wide, on top of each group's own calculation. Leave at `1` unless you're running a temporary store-wide promo/surcharge.
+- **Quantity tiers** — the exact quantities selectable in the Quantity dropdown and each tier's discount multiplier (see below).
+- **Default VAT rate** — as a decimal (`0.20` = 20%).
+- **Delete data on uninstall** — off by default so a routine deactivate/reactivate never loses your setup.
+
+### The assignment model (categories vs. products)
+
+Both **Field Groups** and **Dimension Presets** use the same assignment logic on their **Assign to Categories / Products** box:
+
+| You set… | Result |
+|---|---|
+| **Nothing** | Applies to your **entire shop** (global). |
+| **One or more categories** | Applies to every product in those categories, including products added later. |
+| **Specific products** | Applies only to those products, regardless of category. |
+| **Both** | A product matches if it hits **either** rule (category **OR** product). |
+
+**Per-product fine control:** on any WooCommerce product, the **PW Configurator — Overrides for this Product** box lets you:
+
+- **Add** a field group to a single product even if its category doesn't match.
+- **Exclude** a field group that would otherwise apply (e.g. assigned to the whole category, but not wanted on this one product).
 
 ---
 
-## 8. Rearranging the fields visually with CSS (no code changes needed per-product)
+## Displaying the configurator
 
-By default, every field prints in one fixed order: Quantity → Versions →
-Format → then each Field Group's fields in the order you built them in
-wp-admin. That's the order a brand-new template shows out of the box.
+Two equivalent ways to place the form on a product page.
 
-**If your custom design wants a different visual arrangement** — e.g. two
-fields side by side, Material given a full-width row with more visual
-weight, or the checkbox pulled up near the top instead of sitting at the
-bottom — you don't need to touch this plugin's code or rebuild anything
-in wp-admin. Every field wrapper carries a `data-pwc-field="..."`
-attribute you can target directly from your theme's Custom CSS (in
-Elementor: the template's Advanced tab, or your child theme's
-stylesheet).
+### Elementor widget (recommended)
 
-**Field keys to target** (the `key` value is whatever you typed in the
-Field Group's Field key box, e.g. `material`, `printing_outside`,
-`artwork_check`). The three built-in fields always use these keys:
-`quantity`, `versions`, `dimension_id`. The offer box and its five rows
-are also targetable: `offer_box`, `offer_base_price`,
-`offer_additional_options`, `offer_total_net`, `offer_vat`,
-`offer_total_incl_vat`.
+Using Elementor Pro:
 
-### Example use case: two-column layout with Material given its own full-width row
+1. Edit your **Single Product** template under **Elementor → Theme Builder** (or edit a product page directly).
+2. Drag in the **PW Product Configurator** widget (search "PW").
+3. Leave the **Product ID** field blank — the form auto-detects the current product.
+4. Style the surrounding section as you like; the widget's own layout (form left, sticky offer box right) sits inside it.
 
-Say your design wants Quantity and Format side by side, Material as a
-prominent full-width row underneath, then Printing and Varnish paired up:
+### Shortcode
+
+```text
+[pwc_configurator]          // auto-detects the current product
+[pwc_configurator id="123"] // force a specific product ID
+```
+
+---
+
+## The pricing model
+
+Every option uses one of three pricing rules. The engine combines them into the final offer.
+
+| Rule | What it does | Typical use |
+|---|---|---|
+| **No price impact** | Informational only; doesn't change the price | *Country of delivery* (affects VAT only) |
+| **€ per m²** *(× box area × qty)* | Option price × box surface area × quantity | Material, printing, varnish, laminate |
+| **Flat, once per order** | A fixed amount added once, regardless of size or quantity | Express-production surcharge, artwork check |
+
+**The calculation, end to end:**
+
+```
+per-box unit price   = Σ ( per-m² option prices × box surface area m² )
+base price           = unit price × quantity × tier multiplier × versions × global multiplier
+additional options   = Σ flat one-off charges × global multiplier
+total (net)          = base price + additional options
+total (incl. VAT)    = total net × (1 + VAT rate)
+```
+
+- **Box surface area** is computed by `box_area_m2()` from the preset's L/W/H. Override it per box style via the [`pwc_box_area_m2`](#filters) filter (e.g. with an exact die-line).
+- **Tier multiplier** is the digressive-discount curve: a multiplier of `0.68` at a tier means boxes at that quantity are priced at 68% of the per-box list price — bulk orders get cheaper per unit.
+- **Versions** multiplies the base price for multi-version print runs.
+
+---
+
+## Customizing the layout with CSS
+
+By default, fields render in one fixed column: **Quantity → Versions → Format**, then each Field Group's fields in admin order.
+
+For a custom visual arrangement (two columns, a full-width row, reordering) you don't touch plugin code or rebuild anything — every field wrapper exposes a `data-pwc-field="…"` attribute you can target from your theme's Custom CSS (Elementor **Advanced** tab, or your child theme stylesheet).
+
+### Available `data-pwc-field` keys
+
+| Built-in field | Key |
+|---|---|
+| Quantity | `quantity` |
+| Versions | `versions` |
+| Format | `dimension_id` |
+| Any custom field | the **Field key** you set (e.g. `material`, `printing_outside`) |
+
+| Offer-panel row | Key |
+|---|---|
+| Offer box | `offer_box` |
+| Base price | `offer_base_price` |
+| Additional options | `offer_additional_options` |
+| Total net | `offer_total_net` |
+| VAT | `offer_vat` |
+| Total incl. VAT | `offer_total_incl_vat` |
+
+### Example: two columns, Material full-width, Printing + Varnish paired
 
 ```css
 .pwc-col-form {
@@ -240,135 +249,155 @@ prominent full-width row underneath, then Printing and Varnish paired up:
 .pwc-field[data-pwc-field="varnish"]          { grid-column: 2; }
 ```
 
-### Example use case: simple reordering without changing columns
-
-If you just want a different top-to-bottom order but the same single-column
-layout, `order` on a flex container is simpler than Grid:
+### Example: simple reorder (single column)
 
 ```css
 .pwc-col-form { display: flex; flex-direction: column; }
-.pwc-field[data-pwc-field="artwork_check"] { order: -1; } /* move to the very top */
+.pwc-field[data-pwc-field="artwork_check"] { order: -1; } /* move to the top */
 .pwc-field[data-pwc-field="material"]      { order: 1; }
 ```
 
-### Things worth knowing before you rely on this
+### Things to know before relying on this
 
-- **Screen-reader/keyboard tab order does not change** — it still follows
-  the original HTML order, only the visual position moves. Fine for most
-  storefronts, but worth knowing if accessibility compliance matters to you.
-- **New fields default to source order until you add a rule for them.**
-  If you build a brand-new Field Group next month, its fields will appear
-  in the default position until you add a matching `[data-pwc-field="..."]`
-  rule for the new key — nothing breaks, it just won't be exactly where
-  you want visually until that one extra CSS line is added.
-- **Hiding a field with `display: none` does not remove it from
-  pricing.** Only hide fields that are genuinely optional or that you're
-  comfortable defaulting silently — a hidden required field (like
-  Quantity or Format) will block "Add to cart" since nothing gets
-  selected.
+- **Visual order only.** Screen-reader and keyboard tab order still follow the source HTML, not the visual position.
+- **New fields default to source order** until you add a matching `[data-pwc-field="…"]` rule. Nothing breaks; they just sit in the default spot until you add that one line.
+- **`display:none` hides a field but doesn't remove it from pricing.** Hiding a *required* field (Quantity/Format) will block add-to-cart since nothing gets selected. Only hide genuinely optional fields.
 
 ---
 
-## 9. A full worked example
+## Developer reference
 
-Say you're setting up **Folding Boxes**:
+### Custom Post Types
 
-1. **Dimension Presets**: create `40 x 40 x 100 mm`, `60 x 60 x 150 mm`,
-   etc. Tick "Folding Boxes" category on each.
-2. **Field Group** "Folding Box Options", tick "Folding Boxes" category:
-   - Dropdown `Material` (key `material`): options "275g GC1
-     chromoboard" (€ per m², 4.20), "350g GZ board" (€ per m², 6.10)
-   - Dropdown `Printing – Outside` (key `printing_outside`): "1 colour,
-     black" (€ per m², 0.35), "Full colour" (€ per m², 0.90)
-   - Dropdown `Varnish` (key `varnish`): "No varnish" (no price impact,
-     0), "Matt varnish" (€ per m², 0.15)
-   - Dropdown `Production time` (key `production_time`): "Economy" (flat,
-     once per order, 0), "Express" (flat, once per order, 45)
-   - Checkbox `Other` (key `artwork_check`): "Professional artwork
-     check" — flat price 20
-3. Publish everything.
-4. Open any product in the "Folding Boxes" category — the configurator
-   widget on its page now shows Quantity, Versions, Format, Material,
-   Printing – Outside, Varnish, Production time, and the artwork-check
-   checkbox, all pulled in automatically. No per-product setup needed
-   unless you want an exception (see section 3).
+| Post type | Admin name |
+|---|---|
+| `pwc_field_group` | Field Groups |
+| `pwc_dimension` | Dimension Presets |
 
----
+### Shortcode
 
-## 10. Things that still need your real data before launch
+```php
+[pwc_configurator]          // current product
+[pwc_configurator id="123"] // explicit product
+```
 
-- **The box surface-area formula.** Right now it's a generic placeholder
-  formula (`box_area_m2()` inside `includes/class-pwc-pricing.php`) that
-  estimates how much board a box uses from its L/W/H. This drives every
-  "€ per m²" price, so it's the single most important number to get
-  right — swap it for your actual die-cut/board-consumption formula
-  (ask whoever does your production calculations, or a developer can
-  hook `pwc_box_area_m2` to plug in the real one per box style).
-- **Real prices** for every option you enter above — the plugin has no
-  opinion on what things should cost, it just multiplies what you type in.
-- **VAT rates per delivery country**, if you sell across borders — right
-  now there's one default rate; ask a developer to extend the
-  `pwc_country_vat_map` option or the `pwc_vat_rate` filter for
-  per-country rates.
+### Filters
 
----
+| Filter | Args | Purpose |
+|---|---|---|
+| `pwc_box_area_m2` | `$area_m2`, `$length_mm`, `$width_mm`, `$height_mm` | Override the box surface-area formula per style (e.g. exact die-line). |
+| `pwc_vat_rate` | `$rate`, `$country_code` | Override/extend the resolved VAT rate per country. |
 
-## 11. Not built yet
+Example — exact die-line for a specific box style:
 
-The "Want an individual sample?", "Online Designer" toggle, "Offer by
-email," "Send contours by email," and "Print offer" actions from the
-reference site aren't included in this version — this covers the core
-configure → live price → add to cart flow only. Let your developer know
-if/when you want these added; they'd build on top of the same pricing
-engine described here.
+```php
+add_filter( 'pwc_box_area_m2', function ( $area, $l, $w, $h ) {
+    return my_exact_die_line_area( $l, $w, $h ); // return m² as a float
+}, 10, 4 );
+```
+
+### Options (wp_options keys)
+
+| Key | Type | Default |
+|---|---|---|
+| `pwc_master_pricing_enabled` | `'1'`/`'0'` | `'1'` |
+| `pwc_global_multiplier` | float | `1` |
+| `pwc_quantity_tiers` | array of `['qty','multiplier']` | 9 tiers (500 → 100,000) |
+| `pwc_default_vat_rate` | float (decimal) | `0.20` |
+| `pwc_country_vat_map` | array `country => rate` | `[]` |
+| `pwc_delete_data_on_uninstall` | `'1'`/`'0'` | `'0'` |
+
+### Field/option data shape
+
+Field Groups store their fields as JSON in post meta `_pwc_fields`. Each option carries a `pricing_mode` of `none`, `per_sqm`, or `flat_order`, plus a numeric `price`. See `PWC_Pricing::calculate()` in [includes/class-pwc-pricing.php](includes/class-pwc-pricing.php) for the full breakdown logic.
 
 ---
 
-## 12. WooCommerce compatibility & standards
+## Worked example
 
-- **HPOS (High-Performance Order Storage)** — declared compatible. All order
-  data this plugin writes goes through WooCommerce's official
-  `WC_Order_Item::add_meta_data()` method, which works correctly whether your
-  store uses legacy post-based orders or the newer HPOS tables.
-- **Currency** — every price shown uses WooCommerce's own `wc_price()`
-  formatting, so it automatically follows whatever you've set in
-  **WooCommerce → Settings → General** (currency, symbol position, decimal
-  and thousand separators). Prices you type into a Field Group option are
-  assumed to already be in your store's base currency, the same way
-  WooCommerce's own product prices work — this plugin doesn't do currency
-  conversion, and neither does core WooCommerce without a separate
-  multi-currency extension.
-- **Uninstall** — deactivating the plugin (the normal Plugins-screen toggle)
-  never deletes anything. A full **Delete** only removes data if you've
-  explicitly ticked **Settings → "Delete all data on uninstall"** first —
-  off by default, so nobody loses their setup from a routine update or
-  deactivate/reactivate cycle. Even with it on, past order data is never
-  touched — only this plugin's own Field Groups, Dimension Presets, and
-  settings.
-- **Security/data handling** — all admin form submissions are nonce-verified
-  and capability-checked (`manage_woocommerce` / `edit_post`), and all output
-  is escaped (`esc_html`, `esc_attr`) per WordPress/WooCommerce coding
-  standards.
+Setting up **Folding Boxes** end to end:
 
-One thing to flag honestly: field labels and admin text in this plugin
-aren't yet wrapped for translation (`__()`/`_e()`), so it isn't
-translation-ready out of the box. Not a functional issue if your site is
-single-language, but worth knowing if you'll need other languages later.
+1. **Dimension Presets** — create `40 x 40 x 100 mm`, `60 x 60 x 150 mm`, … tick the **Folding Boxes** category on each.
+2. **Field Group** *"Folding Box Options"*, tick **Folding Boxes**:
+   - Dropdown **Material** (`material`): `275g GC1 chromoboard` (€/m², 4.20), `350g GZ board` (€/m², 6.10)
+   - Dropdown **Printing – Outside** (`printing_outside`): `1 colour, black` (€/m², 0.35), `Full colour` (€/m², 0.90)
+   - Dropdown **Varnish** (`varnish`): `No varnish` (no impact), `Matt varnish` (€/m², 0.15)
+   - Dropdown **Production time** (`production_time`): `Economy` (flat, 0), `Express` (flat, 45)
+   - Checkbox **Other** (`artwork_check`): `Professional artwork check` — flat 20
+3. **Publish** everything.
+4. Open any Folding Boxes product — the widget now shows Quantity, Versions, Format, Material, Printing – Outside, Varnish, Production time, and the artwork-check checkbox, all pulled in automatically. No per-product setup unless you want an exception (see [How it works](#the-assignment-model-categories-vs-products)).
 
 ---
 
-## 13. Troubleshooting
+## WooCommerce compatibility
 
-- **Form shows but prices don't update** — check **Settings → Price
-  calculation is active site-wide** is ticked, and check the Field
-  Group's own **"Include this group's fields in price calculation"** box
-  is ticked too.
-- **A dropdown option shows but doesn't change the price** — its Pricing
-  mode is probably set to "No price impact." Edit the Field Group and
-  change that option's pricing mode.
-- **A category's options aren't showing on a product** — check the
-  product is actually in that category (Product → Product categories,
-  in the sidebar), and check the Field Group wasn't accidentally added
-  to that product's "Exclude these groups" list.
-- **"Add to cart" fails** — Quantity and Format are required fields;
-  make sure both are selected before submitting.
+- **HPOS (High-Performance Order Storage)** — declared compatible. All order data is written through the official `WC_Order_Item::add_meta_data()` method, so it works under both legacy post-based storage and the new HPOS tables.
+- **Currency** — every displayed price uses WooCommerce's own `wc_price()` formatting, so it follows your **WooCommerce → Settings → General** configuration (currency, symbol position, decimal/thousand separators). Option prices you enter are assumed to be in your store's base currency, exactly like core product prices — no currency conversion is performed.
+- **Uninstall** — deactivating the plugin never deletes anything. A full **Delete** only removes data when you've first ticked **Settings → Delete all data on uninstall** (off by default). Even then, only this plugin's own Field Groups, Dimension Presets, and settings are removed — never WooCommerce products, orders, or prices already stored on placed orders.
+- **Security** — all admin submissions are nonce-verified and capability-checked (`manage_woocommerce` / `edit_post`), and all output is escaped (`esc_html`, `esc_attr`) per WordPress/WooCommerce coding standards.
+
+> **Translation:** field labels and admin text are not yet wrapped in `__()`/`_e()`, so the plugin is not translation-ready out of the box. Not a functional issue for single-language sites, but worth knowing if you need other languages later.
+
+---
+
+## FAQ
+
+**Does it replace the normal WooCommerce price?**
+Yes — on any product the configurator applies to, the calculated price overrides the regular product price in the cart.
+
+**Can I show options without affecting price?**
+Yes. Turn off *Include this group's fields in price calculation* on the Field Group, or set individual options to *No price impact*. Selections are still recorded; they just contribute €0.
+
+**Do I have to configure each product?**
+No. Assign Field Groups and Dimension Presets to a category once and every product in that category inherits them automatically. Per-product setup is only for exceptions.
+
+**Does it work without Elementor?**
+Yes — use the `[pwc_configurator]` shortcode. Elementor/Elementor Pro is only needed for the drag-and-drop widget.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Form shows but prices don't update | Confirm **Settings → master pricing switch** is **on**, and the Field Group's *Include in price calculation* is ticked. |
+| A dropdown option shows but doesn't change price | Its pricing mode is probably *No price impact*. Edit the Field Group and change it. |
+| A category's options aren't showing on a product | Confirm the product is actually in that category, and that the Field Group isn't on the product's *Exclude* list. |
+| *Add to cart* fails | Quantity and Format are required — make sure both are selected. |
+| No **PW Configurator** menu after activating | WooCommerce isn't active. Activate WooCommerce first. |
+
+---
+
+## Roadmap
+
+The core **configure → live price → add to cart** flow is complete. The following reference-site actions are **not yet built** and can be layered onto the same pricing engine on request:
+
+- *Want an individual sample?*
+- *Online Designer* toggle
+- *Offer by email*
+- *Send contours by email*
+- *Print offer*
+
+If you need these, ask your developer — they extend the existing engine rather than replace it.
+
+---
+
+## Changelog
+
+### 0.0.01
+- Initial release.
+- Core configurator: Field Groups, Dimension Presets, quantity tiers, live per-m²/flat pricing, VAT, Elementor widget + shortcode.
+- WooCommerce HPOS compatibility, nonce/capability hardening, escaped output.
+- Master pricing switch, global/group multipliers, per-product add/exclude overrides.
+
+---
+
+## License
+
+Licensed under the **GNU General Public License v2.0 or later** — [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html).
+
+## Credits
+
+- **Author:** Devsroom / WPMHS
+- **Homepage:** [https://wpmhs.com](https://wpmhs.com)
+- **Repository:** [PackagingWarehouse-Product-Addons-Configurator](https://github.com/mehedishubho/PackagingWarehouse-Product-Addons-Configurator)
