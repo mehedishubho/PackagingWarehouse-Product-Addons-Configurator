@@ -136,15 +136,33 @@ class PWC_Pricing {
 	}
 
 	/**
-	 * Box surface-area formula (m²) used for per_sqm priced fields.
-	 * This is a generic "total board consumed per box" approximation
-	 * (front+back+sides+top/bottom flaps). Swap this out per box style
-	 * via the `pwc_box_area_m2` filter if a style needs an exact die-line.
+	 * Area in m² for one piece, used by per_sqm priced fields.
+	 *
+	 * Height-aware: a Dimension Preset with no Height is treated as a
+	 * flat 2D product (label / card / flat sheet) and uses the true
+	 * footprint (L × W). A preset with Height is a 3D folding box and
+	 * uses the board-blank area — the four side walls plus a 1.6×
+	 * top/bottom flap allowance.
+	 *
+	 * Override either with the `pwc_area_m2` filter (preferred) or the
+	 * legacy `pwc_box_area_m2` filter for backward compatibility.
 	 */
-	public static function box_area_m2( $length_mm, $width_mm, $height_mm ) {
-		$l = $length_mm / 1000; $w = $width_mm / 1000; $h = $height_mm / 1000;
-		$area = 2 * ( ( $l * $h ) + ( $w * $h ) ) + 1.6 * ( $l * $w ); // body + top/bottom flap allowance
-		return apply_filters( 'pwc_box_area_m2', $area, $length_mm, $width_mm, $height_mm );
+	public static function area_m2( $length_mm, $width_mm, $height_mm ) {
+		$l = (float) $length_mm / 1000;
+		$w = (float) $width_mm  / 1000;
+		$h = (float) $height_mm / 1000;
+
+		if ( $h > 0 ) {
+			// 3D box: perimeter × height (side walls) + top/bottom flap allowance.
+			$area = 2 * ( ( $l * $h ) + ( $w * $h ) ) + 1.6 * ( $l * $w );
+		} else {
+			// 2D flat piece: true footprint, no flap allowance.
+			$area = $l * $w;
+		}
+
+		$area = apply_filters( 'pwc_area_m2', $area, $length_mm, $width_mm, $height_mm );
+		$area = apply_filters( 'pwc_box_area_m2', $area, $length_mm, $width_mm, $height_mm );
+		return $area;
 	}
 
 	private static function find_tier_multiplier( $qty ) {
@@ -188,7 +206,7 @@ class PWC_Pricing {
 		$pricing_master_enabled = get_option( 'pwc_master_pricing_enabled', '1' ) === '1';
 		$global_multiplier      = (float) get_option( 'pwc_global_multiplier', 1 );
 
-		$area_m2     = self::box_area_m2( $dims['length'], $dims['width'], $dims['height'] );
+		$area_m2     = self::area_m2( $dims['length'], $dims['width'], $dims['height'] );
 		$flat_fields = self::get_flat_fields( $product_id );
 
 		$per_sqm_unit_total = 0.0;  // €/box, before qty

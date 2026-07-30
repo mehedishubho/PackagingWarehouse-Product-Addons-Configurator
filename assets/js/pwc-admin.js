@@ -110,4 +110,80 @@
 	}, true);
 
 	render();
+
+	// ------------------------------------------------------------------
+	// Per-product "Image per Material" picker (product edit screen only).
+	// Runs only when the #pwc-product-images box is present.
+	// ------------------------------------------------------------------
+	(function () {
+		const box = document.getElementById('pwc-product-images');
+		if (!box) return;
+
+		const hidden = document.getElementById('pwc_product_images_json');
+
+		function sync() {
+			const map = {};
+			box.querySelectorAll('.pwc-prod-img-row').forEach(function (row) {
+				const key = row.getAttribute('data-key');
+				const id = parseInt(row.querySelector('.pwc-att-id').value || '0', 10);
+				if (key && id) map[key] = id;
+			});
+			if (hidden) hidden.value = JSON.stringify(map);
+		}
+
+		let frame = null;
+		let activeRow = null;
+
+		function setImage(row, id, thumbUrl) {
+			row.querySelector('.pwc-att-id').value = id;
+			const img = row.querySelector('.pwc-prod-img-thumb img');
+			const none = row.querySelector('.pwc-no-img');
+			if (img) { img.src = thumbUrl; img.style.display = 'block'; }
+			if (none) none.style.display = 'none';
+			const removeBtn = row.querySelector('.pwc-remove-img');
+			if (removeBtn) removeBtn.style.display = '';
+			sync();
+		}
+
+		function clearImage(row) {
+			row.querySelector('.pwc-att-id').value = '';
+			const img = row.querySelector('.pwc-prod-img-thumb img');
+			const none = row.querySelector('.pwc-no-img');
+			if (img) { img.removeAttribute('src'); img.style.display = 'none'; }
+			if (none) none.style.display = '';
+			const removeBtn = row.querySelector('.pwc-remove-img');
+			if (removeBtn) removeBtn.style.display = 'none';
+			sync();
+		}
+
+		box.addEventListener('click', function (e) {
+			const target = e.target;
+			if (target.classList.contains('pwc-choose-img')) {
+				activeRow = target.closest('.pwc-prod-img-row');
+				if (!activeRow) return;
+				if (!frame) {
+					frame = wp.media({
+						title: 'Select material image',
+						multiple: false,
+						library: { type: 'image' },
+						button: { text: 'Use this image' }
+					});
+					frame.on('select', function () {
+						const att = frame.state().get('selection').first().toJSON();
+						if (activeRow) {
+							setImage(activeRow, att.id, (att.sizes && att.sizes.thumbnail) ? att.sizes.thumbnail.url : att.url);
+						}
+					});
+				}
+				frame.open();
+			} else if (target.classList.contains('pwc-remove-img')) {
+				const row = target.closest('.pwc-prod-img-row');
+				if (row) clearImage(row);
+			}
+		});
+
+		// keep hidden input in sync before save
+		document.addEventListener('submit', function () { sync(); }, true);
+		sync();
+	})();
 })(jQuery);

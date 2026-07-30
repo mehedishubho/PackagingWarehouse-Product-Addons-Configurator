@@ -20,3 +20,30 @@
 	margin-bottom: 6px;
 }
 #pwc-fields-repeater { margin-bottom: 12px; }
+
+/* Per-product "Image per Material" picker */
+.pwc-prod-img-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+	gap: 10px;
+}
+.pwc-prod-img-row {
+	border: 1px solid #dcdcde;
+	background: #fff;
+	border-radius: 4px;
+	padding: 8px;
+}
+.pwc-prod-img-thumb {
+	width: 64px;
+	height: 64px;
+	border: 1px dashed #c3c4c7;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 6px;
+	overflow: hidden;
+}
+.pwc-prod-img-thumb img { max-width: 100%; max-height: 100%; }
+.pwc-prod-img-thumb .pwc-no-img { font-size: 11px; color: #999; }
+.pwc-prod-img-meta strong { font-size: 12px; }
+.pwc-prod-img-meta .pwc-remove-img { color: #b32d2e; }

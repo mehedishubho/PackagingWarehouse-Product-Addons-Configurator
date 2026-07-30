@@ -39,6 +39,12 @@ class PWC_MetaBoxes {
 			wp_enqueue_script( 'pwc-admin', PWC_URL . 'assets/js/pwc-admin.js', [ 'jquery' ], PWC_VERSION, true );
 			wp_enqueue_style( 'pwc-admin', PWC_URL . 'assets/css/pwc-admin.css', [], PWC_VERSION );
 
+			// The per-product "Image per Material" picker needs the
+			// WordPress media uploader (wp.media) on the product screen.
+			if ( $post_type === 'product' ) {
+				wp_enqueue_media();
+			}
+
 			// Reuse WooCommerce's own searchable product picker (same
 			// widget WooCommerce uses for Upsells / Cross-sells) so we
 			// don't have to ship + maintain a separate search UI.
@@ -61,6 +67,7 @@ class PWC_MetaBoxes {
 
 	public static function register_product_override( $post ) {
 		add_meta_box( 'pwc_product_override', 'PW Configurator — Overrides for this Product', [ __CLASS__, 'render_product_override' ], 'product', 'normal', 'default' );
+		add_meta_box( 'pwc_product_images', 'PW Configurator — Image per Material', [ __CLASS__, 'render_product_images_box' ], 'product', 'normal', 'default' );
 	}
 
 	/** Field-group only: master on/off switch + price multiplier for the whole group */
@@ -149,10 +156,10 @@ class PWC_MetaBoxes {
 			<tr>
 				<th>Length (mm)</th><td><input type="number" step="0.1" name="pwc_length_mm" value="<?php echo esc_attr( $l ); ?>"></td>
 				<th>Width (mm)</th><td><input type="number" step="0.1" name="pwc_width_mm" value="<?php echo esc_attr( $w ); ?>"></td>
-				<th>Height (mm)</th><td><input type="number" step="0.1" name="pwc_height_mm" value="<?php echo esc_attr( $h ); ?>"></td>
+				<th>Height (mm)<br><small style="font-weight:normal;color:#666;">blank = flat 2D</small></th><td><input type="number" step="0.1" name="pwc_height_mm" value="<?php echo esc_attr( $h ); ?>"></td>
 			</tr>
 		</table>
-		<p style="color:#666;">The Post Title is what customers see in the dropdown (e.g. "40 x 40 x 100 mm"). These L/W/H values feed the surface-area price formula.</p>
+		<p style="color:#666;">The Post Title is what customers see in the dropdown (e.g. "40 x 40 x 100 mm"). Fill all three for a <strong>3D box</strong>; leave <strong>Height blank</strong> for a flat <strong>2D product</strong> (label / card / sheet). The area drives the per-m² price.</p>
 		<?php
 	}
 
@@ -178,6 +185,70 @@ class PWC_MetaBoxes {
 			$checked = in_array( $g->ID, $excluded, true ) ? 'checked' : '';
 			echo '<label style="display:block;margin-bottom:4px;"><input type="checkbox" name="pwc_excluded_groups[]" value="' . esc_attr( $g->ID ) . '" ' . $checked . '> ' . esc_html( $g->post_title ) . '</label>';
 		}
+	}
+
+	/**
+	 * Per-product image picker: for each dropdown (material-style) field
+	 * that applies to this product, choose the image shown when a customer
+	 * selects that option. Stored keyed by "field_key::option_label" so the
+	 * mapping survives option reordering in the Field Group.
+	 *
+	 * This is what lets two products share the same Material value but show
+	 * different images — the image is looked up per product, not per shared
+	 * option. Falls back to the product's featured image when left blank.
+	 */
+	public static function render_product_images_box( $post ) {
+		wp_nonce_field( 'pwc_save', 'pwc_nonce' );
+
+		$saved = get_post_meta( $post->ID, '_pwc_product_images', true );
+		$saved = is_array( $saved ) ? $saved : [];
+
+		$groups = PWC_Pricing::get_field_groups_for_product( $post->ID );
+
+		// Only dropdown (select) fields carry swappable materials.
+		$fields = [];
+		foreach ( $groups as $group ) {
+			foreach ( $group['fields'] as $field ) {
+				if ( ( $field['type'] ?? 'select' ) === 'select' && ! empty( $field['options'] ) ) {
+					$fields[] = $field;
+				}
+			}
+		}
+
+		echo '<p style="color:#666;">Choose the image shown when a customer selects each material/option. Leave blank to fall back to the product\'s featured image.</p>';
+
+		if ( empty( $fields ) ) {
+			echo '<p style="color:#666;"><em>No dropdown fields apply to this product yet. Assign a Field Group to this product\'s category (or to this product) first, then reload this page.</em></p>';
+			return;
+		}
+
+		foreach ( $fields as $field ) {
+			$fkey = $field['key'];
+			echo '<h4 style="margin:16px 0 6px;">' . esc_html( $field['label'] ) . ' <code style="font-weight:normal;color:#999;">' . esc_html( $fkey ) . '</code></h4>';
+			echo '<div class="pwc-prod-img-grid">';
+			foreach ( $field['options'] as $opt ) {
+				$label  = isset( $opt['label'] ) ? $opt['label'] : '';
+				$mkey   = $fkey . '::' . $label;
+				$att_id = isset( $saved[ $mkey ] ) ? absint( $saved[ $mkey ] ) : 0;
+				$thumb  = $att_id ? wp_get_attachment_image_src( $att_id, 'thumbnail' ) : false;
+
+				echo '<div class="pwc-prod-img-row" data-key="' . esc_attr( $mkey ) . '">';
+				echo '<div class="pwc-prod-img-thumb">';
+				echo '<img src="' . ( $thumb ? esc_url( $thumb[0] ) : '' ) . '" alt="" style="' . ( $thumb ? 'display:block;' : 'display:none;' ) . '">';
+				echo '<span class="pwc-no-img"' . ( $thumb ? ' style="display:none;"' : '' ) . '>no image</span>';
+				echo '</div>';
+				echo '<div class="pwc-prod-img-meta">';
+				echo '<strong>' . esc_html( $label ? $label : '(unlabelled option)' ) . '</strong><br>';
+				echo '<input type="hidden" class="pwc-att-id" value="' . esc_attr( $att_id ) . '">';
+				echo '<button type="button" class="button pwc-choose-img">Choose image</button> ';
+				echo '<button type="button" class="button-link pwc-remove-img"' . ( $att_id ? '' : ' style="display:none;"' ) . '>Remove</button>';
+				echo '</div>';
+				echo '</div>';
+			}
+			echo '</div>';
+		}
+
+		echo '<input type="hidden" name="pwc_product_images_json" id="pwc_product_images_json" value="">';
 	}
 
 	private static function verify( $post_id ) {
@@ -230,5 +301,22 @@ class PWC_MetaBoxes {
 
 		$excluded = isset( $_POST['pwc_excluded_groups'] ) ? array_map( 'intval', $_POST['pwc_excluded_groups'] ) : [];
 		update_post_meta( $post_id, '_pwc_excluded_groups', $excluded );
+
+		// Per-product material -> image map: { "field_key::label": attachment_id }.
+		if ( isset( $_POST['pwc_product_images_json'] ) ) {
+			$raw     = wp_unslash( $_POST['pwc_product_images_json'] );
+			$decoded = json_decode( $raw, true );
+			$clean   = [];
+			if ( is_array( $decoded ) ) {
+				foreach ( $decoded as $k => $v ) {
+					$k = sanitize_text_field( $k );
+					$v = absint( $v );
+					if ( $k && $v ) {
+						$clean[ $k ] = $v;
+					}
+				}
+			}
+			update_post_meta( $post_id, '_pwc_product_images', $clean );
+		}
 	}
 }

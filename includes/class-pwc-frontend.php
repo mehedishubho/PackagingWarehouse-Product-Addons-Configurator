@@ -35,10 +35,11 @@ class PWC_Frontend {
 		$groups     = PWC_Pricing::get_field_groups_for_product( $product_id );
 		$qty_tiers  = PWC_Pricing::get_quantity_tiers();
 		$versions   = PWC_Pricing::get_versions_options();
+		$image_map  = self::build_image_map( $product_id, $groups );
 
 		ob_start();
 		?>
-		<form id="pwc-form-<?php echo esc_attr( $product_id ); ?>" class="pwc-configurator" data-product-id="<?php echo esc_attr( $product_id ); ?>">
+		<form id="pwc-form-<?php echo esc_attr( $product_id ); ?>" class="pwc-configurator" data-product-id="<?php echo esc_attr( $product_id ); ?>" data-pwc-images="<?php echo esc_attr( wp_json_encode( $image_map ) ); ?>">
 
 			<div class="pwc-col pwc-col-form">
 
@@ -123,5 +124,61 @@ class PWC_Frontend {
 			echo '<option value="' . esc_attr( $i ) . '">' . esc_html( $opt['label'] ) . '</option>';
 		}
 		echo '</select></div>';
+	}
+
+	/**
+	 * Attachment ID -> image data for a gallery swap:
+	 * a display-size src, the full-size large (for zoom/lightbox),
+	 * a responsive srcset, and the alt text.
+	 */
+	private static function image_data( $attachment_id ) {
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) return null;
+
+		$full   = wp_get_attachment_image_src( $attachment_id, 'full' );
+		$single = wp_get_attachment_image_src( $attachment_id, 'woocommerce_single' );
+		if ( ! $full && ! $single ) return null;
+
+		return [
+			'src'    => $single ? $single[0] : $full[0],
+			'large'  => $full ? $full[0] : ( $single ? $single[0] : '' ),
+			'srcset' => wp_get_attachment_image_srcset( $attachment_id, 'large' ),
+			'alt'    => (string) get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ),
+		];
+	}
+
+	/**
+	 * Frontend image map: field_key -> option_index -> image data.
+	 * Resolution per option: product-specific image, else the product's
+	 * featured image as a fallback. Keyed by index at render time (matched
+	 * against the current Field Group option order) so reordering a group
+	 * can't point an image at the wrong option.
+	 */
+	private static function build_image_map( $product_id, $groups ) {
+		$saved = get_post_meta( $product_id, '_pwc_product_images', true );
+		$saved = is_array( $saved ) ? $saved : [];
+
+		$featured = self::image_data( get_post_thumbnail_id( $product_id ) );
+
+		$map = [];
+		foreach ( $groups as $group ) {
+			foreach ( $group['fields'] as $field ) {
+				if ( ( $field['type'] ?? 'select' ) !== 'select' || empty( $field['options'] ) ) continue;
+				$fkey = $field['key'];
+				foreach ( $field['options'] as $i => $opt ) {
+					$label  = isset( $opt['label'] ) ? $opt['label'] : '';
+					$mkey   = $fkey . '::' . $label;
+					$att_id = isset( $saved[ $mkey ] ) ? absint( $saved[ $mkey ] ) : 0;
+					$data   = $att_id ? self::image_data( $att_id ) : null;
+					if ( ! $data ) {
+						$data = $featured; // fallback to featured image
+					}
+					if ( $data ) {
+						$map[ $fkey ][ (string) $i ] = $data;
+					}
+				}
+			}
+		}
+		return $map;
 	}
 }
