@@ -47,3 +47,17 @@
 .pwc-prod-img-thumb .pwc-no-img { font-size: 11px; color: #999; }
 .pwc-prod-img-meta strong { font-size: 12px; }
 .pwc-prod-img-meta .pwc-remove-img { color: #b32d2e; }
+
+/* Per-option "Show" toggle + hidden state */
+.pwc-prod-img-row { display: flex; gap: 8px; align-items: flex-start; }
+.pwc-prod-img-check { padding-top: 2px; }
+.pwc-prod-img-check label {
+	font-size: 11px;
+	color: #666;
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	cursor: pointer;
+}
+.pwc-prod-img-thumb { margin-bottom: 0; flex: 0 0 64px; }
+.pwc-prod-img-row-off { opacity: 0.45; }

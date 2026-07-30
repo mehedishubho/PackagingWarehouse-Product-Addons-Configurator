@@ -73,7 +73,7 @@ class PWC_Pricing {
 	 *   + any groups explicitly added via the product's "extra groups"
 	 *   - minus any groups explicitly excluded on the product
 	 */
-	public static function get_field_groups_for_product( $product_id ) {
+	public static function get_field_groups_for_product( $product_id, $apply_overrides = false ) {
 		$cat_ids     = wc_get_product_term_ids( $product_id, 'product_cat' );
 		$extra_ids   = get_post_meta( $product_id, '_pwc_extra_groups', true );
 		$extra_ids   = $extra_ids ? array_map( 'intval', (array) $extra_ids ) : [];
@@ -114,7 +114,52 @@ class PWC_Pricing {
 				'multiplier'      => $multiplier,
 			];
 		}
+
+		// Shrink each dropdown to the options this product actually offers
+		// (per-product override). Only applied on the frontend/pricing path;
+		// the admin image picker passes false so it can show every option.
+		if ( $apply_overrides ) {
+			$matched = self::apply_product_option_overrides( $product_id, $matched );
+		}
+
 		return $matched;
+	}
+
+	/**
+	 * Per-product option override: restrict each dropdown field to a subset
+	 * of its group's options. Stored in _pwc_product_field_options as
+	 * field_key => [enabled option labels]. A field key ABSENT from the
+	 * saved map is left untouched (all its options shown), so the override
+	 * only ever shrinks the list and products saved before this feature
+	 * existed keep showing everything. An EMPTY list for a present key hides
+	 * the whole field on that product. Surviving options are reindexed
+	 * 0,1,2… so option <option value> indices and the image map stay aligned.
+	 */
+	private static function apply_product_option_overrides( $product_id, $groups ) {
+		$enabled = get_post_meta( $product_id, '_pwc_product_field_options', true );
+		$enabled = is_array( $enabled ) ? $enabled : [];
+		if ( empty( $enabled ) ) {
+			return $groups;
+		}
+
+		foreach ( $groups as $gi => $group ) {
+			foreach ( $group['fields'] as $fi => $field ) {
+				$fkey = $field['key'] ?? '';
+				if ( ! $fkey || ! array_key_exists( $fkey, $enabled ) ) {
+					continue;
+				}
+				$allowed = array_map( 'strval', (array) $enabled[ $fkey ] );
+				$kept    = [];
+				foreach ( $field['options'] as $opt ) {
+					$lbl = isset( $opt['label'] ) ? (string) $opt['label'] : '';
+					if ( $lbl !== '' && in_array( $lbl, $allowed, true ) ) {
+						$kept[] = $opt;
+					}
+				}
+				$groups[ $gi ]['fields'][ $fi ]['options'] = $kept;
+			}
+		}
+		return $groups;
 	}
 
 	/**
@@ -125,7 +170,7 @@ class PWC_Pricing {
 	 */
 	public static function get_flat_fields( $product_id ) {
 		$flat = [];
-		foreach ( self::get_field_groups_for_product( $product_id ) as $group ) {
+		foreach ( self::get_field_groups_for_product( $product_id, true ) as $group ) {
 			foreach ( $group['fields'] as $field ) {
 				$field['_group_pricing_enabled'] = $group['pricing_enabled'];
 				$field['_group_multiplier']      = $group['multiplier'];

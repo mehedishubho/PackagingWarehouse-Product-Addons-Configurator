@@ -23,7 +23,7 @@ class PWC_Frontend {
 	 * WooCommerce single product page to auto-detect the current product.
 	 */
 	public static function render_shortcode( $atts ) {
-		$atts = shortcode_atts( [ 'id' => 0 ], $atts );
+		$atts = shortcode_atts( [ 'id' => 0, 'gallery' => '1' ], $atts );
 		$product_id = (int) $atts['id'] ?: get_the_ID();
 		$product    = wc_get_product( $product_id );
 		if ( ! $product ) return '<p>Configurator: no product found.</p>';
@@ -31,15 +31,36 @@ class PWC_Frontend {
 		wp_enqueue_script( 'pwc-frontend' );
 		wp_enqueue_style( 'pwc-frontend' );
 
-		$dimensions = PWC_Pricing::get_dimensions_for_product( $product_id );
-		$groups     = PWC_Pricing::get_field_groups_for_product( $product_id );
-		$qty_tiers  = PWC_Pricing::get_quantity_tiers();
-		$versions   = PWC_Pricing::get_versions_options();
-		$image_map  = self::build_image_map( $product_id, $groups );
+		// apply_overrides=true so per-product option enable/disable is
+		// reflected in BOTH the rendered dropdown and the price calculation.
+		$show_gallery = $atts['gallery'] !== '0';
+		$dimensions   = PWC_Pricing::get_dimensions_for_product( $product_id );
+		$groups       = PWC_Pricing::get_field_groups_for_product( $product_id, true );
+		$qty_tiers    = PWC_Pricing::get_quantity_tiers();
+		$versions     = PWC_Pricing::get_versions_options();
+		$image_map    = self::build_image_map( $product_id, $groups );
+
+		// Initial gallery image = the product's featured image.
+		$featured_id = (int) get_post_thumbnail_id( $product_id );
+		$gallery_img = $featured_id ? self::image_data( $featured_id ) : null;
 
 		ob_start();
 		?>
-		<form id="pwc-form-<?php echo esc_attr( $product_id ); ?>" class="pwc-configurator" data-product-id="<?php echo esc_attr( $product_id ); ?>" data-pwc-images="<?php echo esc_attr( wp_json_encode( $image_map ) ); ?>">
+		<form id="pwc-form-<?php echo esc_attr( $product_id ); ?>" class="pwc-configurator<?php echo $show_gallery ? ' pwc-has-gallery' : ''; ?>" data-product-id="<?php echo esc_attr( $product_id ); ?>" data-pwc-images="<?php echo esc_attr( wp_json_encode( $image_map ) ); ?>">
+
+			<?php if ( $show_gallery ) : ?>
+			<div class="pwc-col pwc-col-gallery">
+				<div class="pwc-gallery">
+					<a class="pwc-gallery-main"<?php echo ( $gallery_img && ! empty( $gallery_img['large'] ) ) ? ' href="' . esc_url( $gallery_img['large'] ) . '"' : ''; ?>>
+						<?php if ( $gallery_img && ! empty( $gallery_img['src'] ) ) : ?>
+							<img class="pwc-gallery-img" src="<?php echo esc_url( $gallery_img['src'] ); ?>"<?php echo ! empty( $gallery_img['srcset'] ) ? ' srcset="' . esc_attr( $gallery_img['srcset'] ) . '"' : ''; ?> alt="<?php echo esc_attr( $gallery_img['alt'] ?? '' ); ?>">
+						<?php else : ?>
+							<img class="pwc-gallery-img" src="" alt="" style="display:none;">
+						<?php endif; ?>
+					</a>
+				</div>
+			</div>
+			<?php endif; ?>
 
 			<div class="pwc-col pwc-col-form">
 
@@ -75,7 +96,14 @@ class PWC_Frontend {
 
 				<?php foreach ( $groups as $group ) : ?>
 					<?php foreach ( $group['fields'] as $field ) : ?>
-						<?php self::render_field( $field ); ?>
+						<?php
+						// A dropdown whose options were all disabled for this
+						// product (per-product override) renders as nothing.
+						if ( ( $field['type'] ?? 'select' ) === 'select' && empty( $field['options'] ) ) {
+							continue;
+						}
+						self::render_field( $field );
+						?>
 					<?php endforeach; ?>
 				<?php endforeach; ?>
 
@@ -106,14 +134,22 @@ class PWC_Frontend {
 
 	private static function render_field( $field ) {
 		$key   = esc_attr( $field['key'] );
-		$label = esc_html( $field['label'] );
+		// wp_kses_post (not esc_html) so labels may contain markup/entities
+		// like "g/m&sup2;", "g/m<sup>2</sup>" or "m&sup3;" — esc_html would
+		// turn those into visible literal text. Allowed tags are stripped by
+		// the browser inside <option>, but entities still render.
+		$label = wp_kses_post( $field['label'] );
 
 		if ( $field['type'] === 'checkbox' ) {
 			$opt = $field['options'][0] ?? [ 'label' => $field['label'], 'price' => 0 ];
 			echo '<div class="pwc-field pwc-field-checkbox" data-pwc-field="' . $key . '">';
-			echo '<label><input type="checkbox" name="' . $key . '" value="1"> ' . esc_html( $opt['label'] );
+			echo '<label><input type="checkbox" name="' . $key . '" value="1"> ' . wp_kses_post( $opt['label'] );
 			if ( ! empty( $opt['price'] ) ) {
-				echo ' <span class="pwc-surcharge">+ ' . esc_html( wc_price( $opt['price'] ) ) . '</span>';
+				// wc_price() returns ready-made WooCommerce HTML (a
+				// <span class="woocommerce-Price-amount">… tree). It must be
+				// echoed as-is, NOT passed through esc_html — escaping it was
+				// showing the raw markup as text next to the checkbox.
+				echo ' <span class="pwc-surcharge">+ ' . wc_price( $opt['price'] ) . '</span>';
 			}
 			echo '</label></div>';
 			return;
@@ -121,7 +157,7 @@ class PWC_Frontend {
 
 		echo '<div class="pwc-field" data-pwc-field="' . $key . '"><label>' . $label . '</label><select name="' . $key . '">';
 		foreach ( $field['options'] as $i => $opt ) {
-			echo '<option value="' . esc_attr( $i ) . '">' . esc_html( $opt['label'] ) . '</option>';
+			echo '<option value="' . esc_attr( $i ) . '">' . wp_kses_post( $opt['label'] ) . '</option>';
 		}
 		echo '</select></div>';
 	}

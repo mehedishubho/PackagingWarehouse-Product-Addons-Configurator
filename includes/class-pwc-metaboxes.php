@@ -200,9 +200,14 @@ class PWC_MetaBoxes {
 	public static function render_product_images_box( $post ) {
 		wp_nonce_field( 'pwc_save', 'pwc_nonce' );
 
-		$saved = get_post_meta( $post->ID, '_pwc_product_images', true );
-		$saved = is_array( $saved ) ? $saved : [];
+		$saved_imgs = get_post_meta( $post->ID, '_pwc_product_images', true );
+		$saved_imgs = is_array( $saved_imgs ) ? $saved_imgs : [];
 
+		$saved_opts = get_post_meta( $post->ID, '_pwc_product_field_options', true );
+		$saved_opts = is_array( $saved_opts ) ? $saved_opts : [];
+
+		// Pass false: the admin picker must see EVERY option so it can
+		// re-enable one the frontend currently hides.
 		$groups = PWC_Pricing::get_field_groups_for_product( $post->ID );
 
 		// Only dropdown (select) fields carry swappable materials.
@@ -215,24 +220,34 @@ class PWC_MetaBoxes {
 			}
 		}
 
-		echo '<p style="color:#666;">Choose the image shown when a customer selects each material/option. Leave blank to fall back to the product\'s featured image.</p>';
+		// Wrapper id is the hook the product-image picker JS binds to.
+		echo '<div id="pwc-product-images">';
+
+		echo '<p style="color:#666;">Tick <strong>Show</strong> for the options this product offers, and choose the image shown when a customer selects each. Untick to hide an option on this product only. Leave the image blank to fall back to the product\'s featured image.</p>';
 
 		if ( empty( $fields ) ) {
 			echo '<p style="color:#666;"><em>No dropdown fields apply to this product yet. Assign a Field Group to this product\'s category (or to this product) first, then reload this page.</em></p>';
+			echo '</div>';
 			return;
 		}
 
 		foreach ( $fields as $field ) {
-			$fkey = $field['key'];
+			$fkey       = $field['key'];
+			$field_over = array_key_exists( $fkey, $saved_opts ) ? (array) $saved_opts[ $fkey ] : null;
+
 			echo '<h4 style="margin:16px 0 6px;">' . esc_html( $field['label'] ) . ' <code style="font-weight:normal;color:#999;">' . esc_html( $fkey ) . '</code></h4>';
 			echo '<div class="pwc-prod-img-grid">';
 			foreach ( $field['options'] as $opt ) {
 				$label  = isset( $opt['label'] ) ? $opt['label'] : '';
 				$mkey   = $fkey . '::' . $label;
-				$att_id = isset( $saved[ $mkey ] ) ? absint( $saved[ $mkey ] ) : 0;
+				$att_id = isset( $saved_imgs[ $mkey ] ) ? absint( $saved_imgs[ $mkey ] ) : 0;
 				$thumb  = $att_id ? wp_get_attachment_image_src( $att_id, 'thumbnail' ) : false;
+				// Enabled unless this field has an explicit saved list that
+				// omits it. A field with NO saved entry = all options on.
+				$enabled = $field_over === null ? true : in_array( $label, $field_over, true );
 
-				echo '<div class="pwc-prod-img-row" data-key="' . esc_attr( $mkey ) . '">';
+				echo '<div class="pwc-prod-img-row' . ( $enabled ? '' : ' pwc-prod-img-row-off' ) . '" data-key="' . esc_attr( $mkey ) . '" data-field="' . esc_attr( $fkey ) . '" data-label="' . esc_attr( $label ) . '">';
+				echo '<div class="pwc-prod-img-check"><label><input type="checkbox" class="pwc-opt-enabled"' . checked( $enabled, true, false ) . '> Show</label></div>';
 				echo '<div class="pwc-prod-img-thumb">';
 				echo '<img src="' . ( $thumb ? esc_url( $thumb[0] ) : '' ) . '" alt="" style="' . ( $thumb ? 'display:block;' : 'display:none;' ) . '">';
 				echo '<span class="pwc-no-img"' . ( $thumb ? ' style="display:none;"' : '' ) . '>no image</span>';
@@ -249,6 +264,8 @@ class PWC_MetaBoxes {
 		}
 
 		echo '<input type="hidden" name="pwc_product_images_json" id="pwc_product_images_json" value="">';
+		echo '<input type="hidden" name="pwc_product_field_options_json" id="pwc_product_field_options_json" value="">';
+		echo '</div>';
 	}
 
 	private static function verify( $post_id ) {
@@ -317,6 +334,25 @@ class PWC_MetaBoxes {
 				}
 			}
 			update_post_meta( $post_id, '_pwc_product_images', $clean );
+		}
+
+		// Per-product dropdown option enable/disable: field_key => [labels].
+		// A present key with an empty array hides the whole field on this
+		// product; an absent key (no saved entry) shows all its options.
+		if ( isset( $_POST['pwc_product_field_options_json'] ) ) {
+			$raw     = wp_unslash( $_POST['pwc_product_field_options_json'] );
+			$decoded = json_decode( $raw, true );
+			$clean   = [];
+			if ( is_array( $decoded ) ) {
+				foreach ( $decoded as $fkey => $labels ) {
+					$fkey = sanitize_key( $fkey );
+					if ( ! $fkey ) continue;
+					$labels = is_array( $labels ) ? array_map( 'sanitize_text_field', $labels ) : [];
+					$labels = array_values( array_filter( $labels ) );
+					$clean[ $fkey ] = $labels;
+				}
+			}
+			update_post_meta( $post_id, '_pwc_product_field_options', $clean );
 		}
 	}
 }

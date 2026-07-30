@@ -119,16 +119,30 @@
 		const box = document.getElementById('pwc-product-images');
 		if (!box) return;
 
-		const hidden = document.getElementById('pwc_product_images_json');
+		const imgHidden = document.getElementById('pwc_product_images_json');
+		const optHidden = document.getElementById('pwc_product_field_options_json');
 
 		function sync() {
-			const map = {};
+			const imgMap = {};
+			const optMap = {};
 			box.querySelectorAll('.pwc-prod-img-row').forEach(function (row) {
-				const key = row.getAttribute('data-key');
+				const fullKey = row.getAttribute('data-key');   // field_key::label
+				const field = row.getAttribute('data-field');    // field_key
+				const label = row.getAttribute('data-label');
 				const id = parseInt(row.querySelector('.pwc-att-id').value || '0', 10);
-				if (key && id) map[key] = id;
+				const enabled = row.querySelector('.pwc-opt-enabled').checked;
+
+				if (fullKey && id) imgMap[fullKey] = id;
+				// Always register the field key (even with no labels) so an
+				// all-unticked field is stored as [] => hidden on the frontend.
+				if (field) {
+					optMap[field] = optMap[field] || [];
+					if (enabled && label) optMap[field].push(label);
+					row.classList.toggle('pwc-prod-img-row-off', !enabled);
+				}
 			});
-			if (hidden) hidden.value = JSON.stringify(map);
+			if (imgHidden) imgHidden.value = JSON.stringify(imgMap);
+			if (optHidden) optHidden.value = JSON.stringify(optMap);
 		}
 
 		let frame = null;
@@ -182,7 +196,12 @@
 			}
 		});
 
-		// keep hidden input in sync before save
+		// keep the enabled-options map in sync when a Show checkbox toggles
+		box.addEventListener('change', function (e) {
+			if (e.target && e.target.classList.contains('pwc-opt-enabled')) sync();
+		});
+
+		// keep hidden inputs in sync before save
 		document.addEventListener('submit', function () { sync(); }, true);
 		sync();
 	})();

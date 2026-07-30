@@ -1,17 +1,41 @@
 .pwc-configurator {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 24px;
+	gap: 20px;
 	align-items: flex-start;
 }
+/* Left: product image gallery (inside the widget). */
+.pwc-col-gallery {
+	flex: 0 1 340px;
+	min-width: 240px;
+	max-width: 420px;
+}
+.pwc-gallery {
+	background: #fff;
+	border-radius: 10px;
+	padding: 14px;
+	box-shadow: 0 2px 10px rgba(0,0,0,.06);
+	position: sticky;
+	top: 100px;
+}
+.pwc-gallery-main { display: block; line-height: 0; }
+.pwc-gallery-img {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: 6px;
+}
+/* Middle: the calculator fields. */
 .pwc-col-form {
-	flex: 1 1 480px;
+	flex: 1 1 400px;
 	background: #fff;
 	border-radius: 10px;
 	padding: 20px;
 }
+/* Right: pricing + add to cart. */
 .pwc-col-offer {
-	flex: 0 1 320px;
+	flex: 0 1 300px;
+	min-width: 240px;
 	position: sticky;
 	top: 100px;
 }
@@ -68,8 +92,16 @@
 .pwc-status.pwc-error { color: #c0392b; }
 .pwc-flash { transition: background-color .2s; background-color: #eaf7ee; }
 
-@media (max-width: 782px) {
-	.pwc-col-offer { position: static; flex-basis: 100%; }
+@media (max-width: 900px) {
+	.pwc-configurator { flex-direction: column; }
+	.pwc-col-gallery,
+	.pwc-col-form,
+	.pwc-col-offer {
+		position: static;
+		flex-basis: auto;
+		width: 100%;
+		max-width: none;
+	}
 	.pwc-field { flex-wrap: wrap; }
 	.pwc-field label { flex-basis: 100%; }
 }

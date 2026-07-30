@@ -122,10 +122,14 @@
 		}
 
 		/**
-		 * Swap the WooCommerce product gallery main image.
+		 * Swap the product gallery main image when a material/option changes.
 		 * Fires a cancelable `pwc:gallery-image-swap` event first, so a
 		 * custom theme or Elementor Product Image widget can take over by
-		 * calling preventDefault(). Default targets the core WC gallery.
+		 * calling preventDefault().
+		 *
+		 * Target order: the configurator's own image column (the left column
+		 * rendered inside the widget), then — only if the widget has no image
+		 * column — the theme's native WooCommerce gallery.
 		 */
 		function swapGalleryImage(data) {
 			const proceed = document.body.dispatchEvent(
@@ -133,6 +137,14 @@
 			);
 			if (!proceed) return; // a custom listener took over
 
+			// 1) Prefer the widget's own gallery image (left column).
+			const internal = form.querySelector('.pwc-gallery-img');
+			if (internal) {
+				setMainImage(internal, data);
+				return;
+			}
+
+			// 2) Fall back to the theme's WooCommerce product gallery.
 			const gallery = document.querySelector('.woocommerce-product-gallery');
 			if (!gallery) return;
 
@@ -140,16 +152,7 @@
 				|| gallery.querySelector('.woocommerce-product-gallery__image img')
 				|| gallery.querySelector('img');
 			if (!main) return;
-
-			main.setAttribute('src', data.src);
-			if (data.srcset) main.setAttribute('srcset', data.srcset); else main.removeAttribute('srcset');
-			main.setAttribute('data-src', data.src);
-			if (data.large) main.setAttribute('data-large_image', data.large);
-			if (data.alt !== undefined && data.alt !== null) main.setAttribute('alt', data.alt);
-
-			// Update the anchor so WooCommerce zoom / lightbox use the new large image.
-			const anchor = main.closest('a');
-			if (anchor && data.large) anchor.setAttribute('href', data.large);
+			setMainImage(main, data);
 
 			// Best-effort refresh of WooCommerce Easy Zoom (harmless if absent).
 			const $ = window.jQuery;
@@ -162,6 +165,18 @@
 					}
 				} catch (e) { /* zoom refresh is best-effort */ }
 			}
+		}
+
+		/** Apply a swap payload {src,srcset,large,alt} to an <img> + its link. */
+		function setMainImage(img, data) {
+			img.setAttribute('src', data.src);
+			if (data.srcset) img.setAttribute('srcset', data.srcset); else img.removeAttribute('srcset');
+			img.setAttribute('data-src', data.src);
+			if (data.large) img.setAttribute('data-large_image', data.large);
+			if (data.alt !== undefined && data.alt !== null) img.setAttribute('alt', data.alt);
+			// Update the anchor so zoom / lightbox use the new large image.
+			const anchor = img.closest('a');
+			if (anchor && data.large) anchor.setAttribute('href', data.large);
 		}
 	}
 })();
