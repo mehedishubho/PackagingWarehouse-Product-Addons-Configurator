@@ -1,0 +1,22 @@
+.pwc-admin-field {
+	border: 1px solid #dcdcde;
+	background: #fff;
+	padding: 12px;
+	margin-bottom: 12px;
+	border-radius: 4px;
+}
+.pwc-admin-field-head {
+	display: grid;
+	grid-template-columns: 2fr 1fr 140px auto;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+.pwc-admin-options { margin-left: 12px; margin-bottom: 8px; }
+.pwc-admin-option-row {
+	display: grid;
+	grid-template-columns: 2fr 1fr 1fr auto;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 6px;
+}
+#pwc-fields-repeater { margin-bottom: 12px; }

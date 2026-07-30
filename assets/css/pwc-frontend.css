@@ -1,0 +1,75 @@
+.pwc-configurator {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 24px;
+	align-items: flex-start;
+}
+.pwc-col-form {
+	flex: 1 1 480px;
+	background: #fff;
+	border-radius: 10px;
+	padding: 20px;
+}
+.pwc-col-offer {
+	flex: 0 1 320px;
+	position: sticky;
+	top: 100px;
+}
+.pwc-field {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 10px 0;
+	border-bottom: 1px solid #eee;
+}
+.pwc-field label {
+	font-weight: 600;
+	flex: 0 0 40%;
+}
+.pwc-field select,
+.pwc-field input[type="number"] {
+	flex: 1 1 auto;
+	padding: 8px 10px;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+}
+.pwc-field-checkbox { justify-content: flex-start; }
+.pwc-hint { font-size: 12px; color: #777; margin: 4px 0 0; width: 100%; }
+.pwc-surcharge { color: #7a1; font-weight: 600; }
+
+.pwc-offer-box {
+	background: #fff;
+	border-radius: 10px;
+	padding: 20px;
+	box-shadow: 0 2px 10px rgba(0,0,0,.06);
+}
+.pwc-offer-box h3 { margin-top: 0; }
+.pwc-pricing-off-notice {
+	background: #fff8e5;
+	border: 1px solid #f0d78c;
+	color: #7a5b00;
+	font-size: 12px;
+	padding: 8px 10px;
+	border-radius: 6px;
+	margin: 0 0 12px;
+}
+.pwc-offer-row {
+	display: flex;
+	justify-content: space-between;
+	padding: 6px 0;
+	font-size: 14px;
+}
+.pwc-offer-total { border-top: 1px solid #ddd; margin-top: 6px; padding-top: 10px; font-size: 16px; font-weight: 700; color: #2f7d4f; }
+.pwc-offer-grand { font-weight: 700; }
+.pwc-transport { font-size: 12px; color: #2f7d4f; margin: 6px 0 16px; }
+.pwc-add-to-cart { width: 100%; text-align: center; }
+.pwc-status { font-size: 13px; margin-top: 10px; min-height: 16px; }
+.pwc-status.pwc-error { color: #c0392b; }
+.pwc-flash { transition: background-color .2s; background-color: #eaf7ee; }
+
+@media (max-width: 782px) {
+	.pwc-col-offer { position: static; flex-basis: 100%; }
+	.pwc-field { flex-wrap: wrap; }
+	.pwc-field label { flex-basis: 100%; }
+}
