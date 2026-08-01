@@ -4,7 +4,7 @@
  * Plugin Name: PW Product Configurator
  * Plugin URI:        https://github.com/mehedishubho/PackagingWarehouse-Product-Addons-Configurator
  * Description:       Turn any WooCommerce product into a fully configurable, live-priced product — dimensions, materials, printing, and add-ons, all managed from wp-admin.
- * Version:           0.0.05
+ * Version:           0.0.06
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Elementor tested up to: 4.0
@@ -19,7 +19,7 @@
 
 if (! defined('ABSPATH')) exit; // no direct access
 
-define('PWC_VERSION', '0.0.05');
+define('PWC_VERSION', '0.0.06');
 define('PWC_PATH', plugin_dir_path(__FILE__));
 define('PWC_URL', plugin_dir_url(__FILE__));
 

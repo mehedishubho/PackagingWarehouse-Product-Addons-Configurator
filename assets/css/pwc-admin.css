@@ -48,16 +48,23 @@
 .pwc-prod-img-meta strong { font-size: 12px; }
 .pwc-prod-img-meta .pwc-remove-img { color: #b32d2e; }
 
-/* Per-option "Show" toggle + hidden state */
-.pwc-prod-img-row { display: flex; gap: 8px; align-items: flex-start; }
-.pwc-prod-img-check { padding-top: 2px; }
+/* Per-option "Show" toggle + hidden (unticked) state.
+   Cards stay VERTICAL (checkbox pill, then thumb, then meta) so they
+   fit the narrow auto-fill grid cells without overlapping. */
+.pwc-prod-img-check {
+	display: flex;
+	justify-content: flex-end;
+	margin-bottom: 6px;
+}
 .pwc-prod-img-check label {
 	font-size: 11px;
-	color: #666;
+	color: #50575e;
 	display: inline-flex;
 	align-items: center;
 	gap: 3px;
 	cursor: pointer;
+	background: #f0f0f1;
+	border-radius: 3px;
+	padding: 2px 6px;
 }
-.pwc-prod-img-thumb { margin-bottom: 0; flex: 0 0 64px; }
 .pwc-prod-img-row-off { opacity: 0.45; }
