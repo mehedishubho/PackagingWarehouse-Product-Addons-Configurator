@@ -1,6 +1,13 @@
 (function ($) {
 	'use strict';
 
+	// Boot the per-product image/option picker FIRST. It lives on the
+	// product edit screen, where #pwc-fields-repeater is absent — so the
+	// guard below would otherwise exit the whole file before the picker
+	// ever initializes. (Function declarations are hoisted, so this call
+	// works even though the function is defined further down.)
+	initProductImagePicker();
+
 	const container = document.getElementById('pwc-fields-repeater');
 	if (!container) return;
 
@@ -113,9 +120,11 @@
 
 	// ------------------------------------------------------------------
 	// Per-product "Image per Material" picker (product edit screen only).
-	// Runs only when the #pwc-product-images box is present.
+	// Called near the top of this file (see initProductImagePicker()) so it
+	// boots even though the #pwc-fields-repeater guard would otherwise skip
+	// it on the product page. Bails out when the box is absent.
 	// ------------------------------------------------------------------
-	(function () {
+	function initProductImagePicker() {
 		const box = document.getElementById('pwc-product-images');
 		if (!box) return;
 
@@ -204,5 +213,5 @@
 		// keep hidden inputs in sync before save
 		document.addEventListener('submit', function () { sync(); }, true);
 		sync();
-	})();
+	}
 })(jQuery);

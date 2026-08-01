@@ -15,16 +15,30 @@
 		form.addEventListener('change', () => scheduleCalc());
 
 		// Swap the product gallery image when a material/option dropdown changes.
-		form.addEventListener('change', function (e) {
-			const sel = e.target;
-			if (!sel || sel.tagName !== 'SELECT') return;
+		function applySelectImage(sel) {
 			const key = sel.name;
 			const idx = sel.value;
-			if (idx === '') return;
+			if (idx === '' || idx === null) return;
 			if (imageData[key] && imageData[key][idx]) {
 				swapGalleryImage(imageData[key][idx]);
 			}
+		}
+		form.addEventListener('change', function (e) {
+			const sel = e.target;
+			if (!sel || sel.tagName !== 'SELECT') return;
+			applySelectImage(sel);
 		});
+
+		// On load, reflect the default selection in the gallery — but only
+		// when exactly one dropdown drives the image, so the left column
+		// matches an already-chosen material instead of staying on the
+		// featured image. With multiple image-driven dropdowns we leave it
+		// to the customer's selection (no arbitrary "which wins" guess).
+		var swapSelects = Array.prototype.filter.call(
+			form.querySelectorAll('select'),
+			function (s) { return !!imageData[s.name]; }
+		);
+		if (swapSelects.length === 1) applySelectImage(swapSelects[0]);
 
 		form.addEventListener('submit', function (e) {
 			e.preventDefault();
